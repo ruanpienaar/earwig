@@ -1,0 +1,12 @@
+{application, earwig,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { earwig_app, []}},
+  {env, []}
+ ]}.
