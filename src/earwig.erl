@@ -24,6 +24,12 @@ start() ->
     % start_file_reader("/Users/rp/hd2/code/pasture/apps/pasture/src").
     ok.
 
+analyze_applcication(EbinDir) ->
+    ok = initialize_xref(x),
+    ok = add_ebin(EbinDir),
+    io:format("xref query : \"V\"~n~p~n", [xref:q(x, "V")]).
+
+
 %% ----------------------------------------------------------------------------------------
 %% Copied some code from crell...
 
@@ -43,33 +49,33 @@ start_xref_module(Module) ->
     c:l(Module),
     {file, BeamLocation} = code:is_loaded(Module),
     {ok,Module} = xref:add_module(x, BeamLocation),
-    % io:format("xref query : \"E\"~n~p~n", [xref:q(x, "E")]),
+    io:format("xref query : \"E\"~n~p~n", [xref:q(x, "E")]),
     io:format("xref query : \"V\"~n~p~n", [xref:q(x, "V")]),
-    % io:format("xref query : \"M\"~n~p~n", [xref:q(x, "M")]),
-    % io:format("xref query : \"A\"~n~p~n", [xref:q(x, "A")]),
-    % io:format("xref query : \"R\"~n~p~n", [xref:q(x, "R")]),
-    % io:format("xref query : \"ME\"~n~p~n", [xref:q(x, "ME")]),
-    % io:format("xref query : \"AE\"~n~p~n", [xref:q(x, "AE")]),
-    % io:format("xref query : \"RE\"~n~p~n", [xref:q(x, "RE")]),
-    % io:format("xref query : \"L\"~n~p~n", [xref:q(x, "L")]),
-    % io:format("xref query : \"X\"~n~p~n", [xref:q(x, "X")]),
-    % io:format("xref query : \"F\"~n~p~n", [xref:q(x, "F")]),
-    % io:format("xref query : \"B\"~n~p~n", [xref:q(x, "B")]),
-    % io:format("xref query : \"U\"~n~p~n", [xref:q(x, "U")]),
-    % io:format("xref query : \"UU\"~n~p~n", [xref:q(x, "UU")]),
-    % io:format("xref query : \"XU\"~n~p~n", [xref:q(x, "XU")]),
-    % io:format("xref query : \"LU\"~n~p~n", [xref:q(x, "LU")]),
-    % io:format("xref query : \"LC\"~n~p~n", [xref:q(x, "LC")]),
-    % io:format("xref query : \"XC\"~n~p~n", [xref:q(x, "XC")]),
-    % io:format("xref query : \"AM\"~n~p~n", [xref:q(x, "AM")]),
-    % io:format("xref query : \"UM\"~n~p~n", [xref:q(x, "UM")]),
-    % io:format("xref query : \"LM\"~n~p~n", [xref:q(x, "LM")]),
-    % io:format("xref query : \"UC\"~n~p~n", [xref:q(x, "UC")]),
-    % io:format("xref query : \"EE\"~n~p~n", [xref:q(x, "EE")]),
-    % io:format("xref query : \"DF\"~n~p~n", [xref:q(x, "DF")]),
-    % io:format("xref query : \"DF_1\"~n~p~n", [xref:q(x, "DF_1")]),
-    % io:format("xref query : \"DF_2\"~n~p~n", [xref:q(x, "DF_2")]),
-    % io:format("xref query : \"DF_3\"~n~p~n", [xref:q(x, "DF_3")]),
+    io:format("xref query : \"M\"~n~p~n", [xref:q(x, "M")]),
+    io:format("xref query : \"A\"~n~p~n", [xref:q(x, "A")]),
+    io:format("xref query : \"R\"~n~p~n", [xref:q(x, "R")]),
+    io:format("xref query : \"ME\"~n~p~n", [xref:q(x, "ME")]),
+    io:format("xref query : \"AE\"~n~p~n", [xref:q(x, "AE")]),
+    io:format("xref query : \"RE\"~n~p~n", [xref:q(x, "RE")]),
+    io:format("xref query : \"L\"~n~p~n", [xref:q(x, "L")]),
+    io:format("xref query : \"X\"~n~p~n", [xref:q(x, "X")]),
+    io:format("xref query : \"F\"~n~p~n", [xref:q(x, "F")]),
+    io:format("xref query : \"B\"~n~p~n", [xref:q(x, "B")]),
+    io:format("xref query : \"U\"~n~p~n", [xref:q(x, "U")]),
+    io:format("xref query : \"UU\"~n~p~n", [xref:q(x, "UU")]),
+    io:format("xref query : \"XU\"~n~p~n", [xref:q(x, "XU")]),
+    io:format("xref query : \"LU\"~n~p~n", [xref:q(x, "LU")]),
+    io:format("xref query : \"LC\"~n~p~n", [xref:q(x, "LC")]),
+    io:format("xref query : \"XC\"~n~p~n", [xref:q(x, "XC")]),
+    io:format("xref query : \"AM\"~n~p~n", [xref:q(x, "AM")]),
+    io:format("xref query : \"UM\"~n~p~n", [xref:q(x, "UM")]),
+    io:format("xref query : \"LM\"~n~p~n", [xref:q(x, "LM")]),
+    io:format("xref query : \"UC\"~n~p~n", [xref:q(x, "UC")]),
+    io:format("xref query : \"EE\"~n~p~n", [xref:q(x, "EE")]),
+    io:format("xref query : \"DF\"~n~p~n", [xref:q(x, "DF")]),
+    io:format("xref query : \"DF_1\"~n~p~n", [xref:q(x, "DF_1")]),
+    io:format("xref query : \"DF_2\"~n~p~n", [xref:q(x, "DF_2")]),
+    io:format("xref query : \"DF_3\"~n~p~n", [xref:q(x, "DF_3")]),
     xref:stop(x).
 
 initialize_xref(Ref) ->
@@ -150,10 +156,12 @@ add_ebin(EbinPath) ->
             {ok,_Modules} ->
                 ok;
             {error, xref_base, Reason} ->
-                io:format("~p got ~p",[?MODULE, {error, xref_base, Reason}])
+                io:format("~p got ~p",[?MODULE, {error, xref_base, Reason}]),
+                {error, xref_base, Reason}
         end
     catch
         C:E ->
             ST = erlang:get_stacktrace(),
-            io:format("~p got ~p, ~p\n~p\n",[?MODULE, C, E, ST])
+            io:format("~p got ~p, ~p\n~p\n",[?MODULE, C, E, ST]),
+            {C,E,ST}
     end.
