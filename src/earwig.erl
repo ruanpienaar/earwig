@@ -6,6 +6,71 @@
      {verbose, true}, {warnings, true}
 ]).
 
+
+analyze_application(Application, Dir) ->
+
+    G = digraph:new(),
+
+    ok = initialize_xref(XrefRef=Application),
+    {ok, Application} = 
+        xref:add_application(
+            XrefRef,
+            Dir,
+            [{builtins, true}, {name, workflow}, {verbose, true}, {warnings, true}]
+        ),
+    %% Get all the unresolved calls:
+    {ok, UCs} = x_unresolved_calls(Application),
+
+    {ok, Vertices} = x_vertices(Application),
+    lists:foreach(fun(Vertex) -> 
+        digraph:add_vertex(G, Vertex)
+    end, Vertices),
+
+    {ok, Edged} = x_edges(Application),
+    lists:foreach(fun({FromVertex, ToVertex}) -> 
+        digraph:add_edge(G, FromVertex, ToVertex)
+    end, Edged),    
+
+    G.
+
+
+
+
+
+
+
+
+
+x_unresolved_calls(Ref) ->
+    xref:q(Ref, "UC").
+
+x_edges(Ref) ->
+    xref:q(Ref, "E").
+
+x_vertices(Ref) ->
+    xref:q(Ref, "V").
+
+
+ % {fps_flows,check_dct_high,2},
+ % {fps_flows,check_dct_high,3},
+
+
+ % [
+
+ % { {fps_flows,check_dct_high,2}, {fps_flows,check_dct_high,3} },
+ % {{fps_flows,check_dct_high,2},{funds2,modified_srp,2}},
+ % {{fps_flows,check_dct_high,3},
+ %  {fps_flows,reach_debit_cap_threshold_high,3}},
+ % {{fps_flows,check_dct_high,3},{fps_flows,send_dct_snm,7}},
+ % {{fps_flows,check_dct_high,3},{misctab,get_dc_options,2}},
+ % {{fps_flows,check_dct_high,3},{rpc,eval_everywhere,4}},
+ % {{fps_flows,check_dct_high,3},
+ %  {transaction_distributor,nodes_in_my_site,0}},
+
+
+
+
+
 %% i can crawl a application, and try and determine, what the dependancies should be..
 %% 1) by finding calls to a module, i can track in what application that module is ..
 
@@ -23,6 +88,14 @@ start() ->
     % observer:start(),
     % start_file_reader("/Users/rp/hd2/code/pasture/apps/pasture/src").
     ok.
+
+% analyze_dirs(Dirs) ->
+
+    %% 
+
+    % filelib:fold_files("/fs01/home/a1713/payport/", ".app.src?", true, fun(Filename, Acc) -> 
+    %     [Filename|Acc] 
+    % end, []).
 
 analyze_applcication(EbinDir) ->
     ok = initialize_xref(x),
@@ -81,8 +154,9 @@ start_xref_module(Module) ->
 initialize_xref(Ref) ->
     case xref:start(Ref, ?OPTS) of
         {error, {already_started, _}} ->
-            xref:stop(Ref),
-            xref:start(Ref);
+            ok = xref:stop(Ref),
+            {ok, _} = xref:start(Ref),
+            ok;
         {ok, _Pid} ->
             ok
     end,
@@ -165,3 +239,6 @@ add_ebin(EbinPath) ->
             io:format("~p got ~p, ~p\n~p\n",[?MODULE, C, E, ST]),
             {C,E,ST}
     end.
+
+% remove_ebin() ->
+%     ok.
