@@ -50,27 +50,6 @@ x_edges(Ref) ->
 x_vertices(Ref) ->
     xref:q(Ref, "V").
 
-
- % {fps_flows,check_dct_high,2},
- % {fps_flows,check_dct_high,3},
-
-
- % [
-
- % { {fps_flows,check_dct_high,2}, {fps_flows,check_dct_high,3} },
- % {{fps_flows,check_dct_high,2},{funds2,modified_srp,2}},
- % {{fps_flows,check_dct_high,3},
- %  {fps_flows,reach_debit_cap_threshold_high,3}},
- % {{fps_flows,check_dct_high,3},{fps_flows,send_dct_snm,7}},
- % {{fps_flows,check_dct_high,3},{misctab,get_dc_options,2}},
- % {{fps_flows,check_dct_high,3},{rpc,eval_everywhere,4}},
- % {{fps_flows,check_dct_high,3},
- %  {transaction_distributor,nodes_in_my_site,0}},
-
-
-
-
-
 %% i can crawl a application, and try and determine, what the dependancies should be..
 %% 1) by finding calls to a module, i can track in what application that module is ..
 
