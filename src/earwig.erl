@@ -1,45 +1,63 @@
 -module(earwig).
--compile(export_all).
+
+% Escript
+-export([
+    main/1
+]).
+
+-export([
+    analyze_ebin_dir/1,
+    analyze_ebin_dir_application/2,
+    all_xref_queries/1
+]).
+-mode(compile).
 
 -define(OPTS, [
      % {builtins, true} ,{recurse, true},
      {verbose, true}, {warnings, true}
 ]).
 
+main(["inject",NodeStr,CookieStr]) ->
+    Node = list_to_atom(NodeStr),
+    Cookie = list_to_atom(CookieStr),
+    spike:connect_and_do(Node, Cookie, inject, [earwig]);
+main(["purge",NodeStr,CookieStr]) ->
+    Node = list_to_atom(NodeStr),
+    Cookie = list_to_atom(CookieStr),
+    spike:connect_and_do(Node, Cookie, purge, [earwig]);
+main(_) ->
+    usage().
 
-analyze_application(Application, Dir) ->
+usage() ->
+    io:format("./earwig_injector [inject/purge] NODE COOKIE\n", []),
+    timer:sleep(50).
 
+
+analyze_ebin_dir(EbinDir) ->
+    ok = initialize_xref(x),
+    ok = add_ebin(EbinDir),
+    io:format("xref query : \"V\"~n~p~n", [xref:q(x, "V")]).
+
+analyze_ebin_dir_application(EbinDir, Application) ->
     G = digraph:new(),
-
     ok = initialize_xref(XrefRef=Application),
     {ok, Application} = 
         xref:add_application(
             XrefRef,
-            Dir,
-            [{builtins, true}, {name, workflow}, {verbose, true}, {warnings, true}]
+            EbinDir,
+            [{builtins, true}, {name, Application}, {verbose, true}, {warnings, true}]
         ),
     %% Get all the unresolved calls:
-    {ok, UCs} = x_unresolved_calls(Application),
-
+    {ok, _UCs} = x_unresolved_calls(Application),
     {ok, Vertices} = x_vertices(Application),
-    lists:foreach(fun(Vertex) -> 
+    ok = lists:foreach(fun(Vertex) -> 
         digraph:add_vertex(G, Vertex)
     end, Vertices),
-
     {ok, Edged} = x_edges(Application),
-    lists:foreach(fun({FromVertex, ToVertex}) -> 
+    ok = lists:foreach(fun({FromVertex, ToVertex}) -> 
         digraph:add_edge(G, FromVertex, ToVertex)
-    end, Edged),    
-
+    end, Edged),
     G.
-
-
-
-
-
-
-
-
 
 x_unresolved_calls(Ref) ->
     xref:q(Ref, "UC").
@@ -63,10 +81,10 @@ x_vertices(Ref) ->
 
 %% TODO: use a erlang src/ folder, to know what you need to add to your .app.src as dependancies.
 
-start() ->
-    % observer:start(),
-    % start_file_reader("/Users/rp/hd2/code/pasture/apps/pasture/src").
-    ok.
+% start() ->
+%     % observer:start(),
+%     % start_file_reader("/Users/rp/hd2/code/pasture/apps/pasture/src").
+%     ok.
 
 % analyze_dirs(Dirs) ->
 
@@ -74,29 +92,11 @@ start() ->
 
     % filelib:fold_files("/fs01/home/a1713/payport/", ".app.src?", true, fun(Filename, Acc) -> 
     %     [Filename|Acc] 
-    % end, []).
-
-analyze_applcication(EbinDir) ->
-    ok = initialize_xref(x),
-    ok = add_ebin(EbinDir),
-    io:format("xref query : \"V\"~n~p~n", [xref:q(x, "V")]).
-
-
+    % end, [])
+    
 %% ----------------------------------------------------------------------------------------
-%% Copied some code from crell...
 
-
-
-% Module should be added to path already.
-
-start_xref() ->
-    start_xref("ebin/", earwig_test_mod).
-
-start_xref(Path, Module) ->
-    %% list all modules in path...???
-    start_xref_module(Module).
-
-start_xref_module(Module) ->
+all_xref_queries(Module) ->
     ok = initialize_xref(x),
     c:l(Module),
     {file, BeamLocation} = code:is_loaded(Module),
@@ -143,65 +143,65 @@ initialize_xref(Ref) ->
 
 %% ----------------------------------------------------------------------------------------
 
-start_file_reader(Dir) ->
-    Files = files(Dir),
-    spawn_link( fun() -> report_server(Files) end ).
+% start_file_reader(Dir) ->
+%     Files = files(Dir),
+%     spawn_link( fun() -> report_server(Files) end ).
 
-report_server(Files) ->
-    tbl = ets:new(tbl, [public, named_table, ordered_set, {write_concurrency, true}]),
-    ok = lists:foreach(fun(Filename) -> spawn_link(fun() -> reader(Filename, self()) end) ! start end, Files),
-    report_server_loop(Files).
+% report_server(Files) ->
+%     tbl = ets:new(tbl, [public, named_table, ordered_set, {write_concurrency, true}]),
+%     ok = lists:foreach(fun(Filename) -> spawn_link(fun() -> reader(Filename, self()) end) ! start end, Files),
+%     report_server_loop(Files).
 
-report_server_loop([]) ->
-    io:format("Report Server - All files are done.~n"),
-    receive
-        _Any ->
-            report_server([])
-    end;
-report_server_loop(Files) ->
-    receive
-        {file_done, Filename} ->
-            io:format("file reader done (~p) ...~n", [Filename]),
-            report_server_loop(lists:delete(Filename, Files))
-    end.
+% report_server_loop([]) ->
+%     io:format("Report Server - All files are done.~n"),
+%     receive
+%         _Any ->
+%             report_server([])
+%     end;
+% report_server_loop(Files) ->
+%     receive
+%         {file_done, Filename} ->
+%             io:format("file reader done (~p) ...~n", [Filename]),
+%             report_server_loop(lists:delete(Filename, Files))
+%     end.
 
-reader(Filename, ReportPid) ->
-    reader(Filename, ReportPid, file:open(Filename, [read, raw, binary, read_ahead])).
+% reader(Filename, ReportPid) ->
+%     reader(Filename, ReportPid, file:open(Filename, [read, raw, binary, read_ahead])).
 
-reader(Filename, RP, {error, Reason}) ->
-    RP ! {file_done, Filename},
-    error_logger:error_msg("file ~p ~nreader died : ~p~n", [Filename, {error, Reason}]);
-reader(Filename, RP, {ok, FPID}) ->
-    receive
-        start ->
-            do_file_read(FPID),
-            erlang:process_info(RP),
-            RP ! {file_done, Filename}
-    end.
+% reader(Filename, RP, {error, Reason}) ->
+%     RP ! {file_done, Filename},
+%     error_logger:error_msg("file ~p ~nreader died : ~p~n", [Filename, {error, Reason}]);
+% reader(Filename, RP, {ok, FPID}) ->
+%     receive
+%         start ->
+%             do_file_read(FPID),
+%             erlang:process_info(RP),
+%             RP ! {file_done, Filename}
+%     end.
 
-do_file_read(FPID) ->
-    do_file_read_loop(FPID, file_read(FPID)).
+% do_file_read(FPID) ->
+%     do_file_read_loop(FPID, file_read(FPID)).
 
-do_file_read_loop(FPID, eof) ->
-    ok = file:close(FPID);
-do_file_read_loop(FPID, {ok, Data}) ->
-    parse_data(Data), %% TODO: maybe check duplicates here too...
-    do_file_read_loop(FPID, file_read(FPID)).
+% do_file_read_loop(FPID, eof) ->
+%     ok = file:close(FPID);
+% do_file_read_loop(FPID, {ok, Data}) ->
+%     parse_data(Data), %% TODO: maybe check duplicates here too...
+%     do_file_read_loop(FPID, file_read(FPID)).
 
-parse_data(Data) ->
-    Lines = binary:split(Data, [<<"\n">>],[global, trim_all]),
-    % maybe use erl_evl scan strings, or something smarter.
-    ok = lists:foreach(fun(Line) ->
-        true = ets:insert(tbl, {erlang:phash2(Line), Line})
-    end, Lines).
+% parse_data(Data) ->
+%     Lines = binary:split(Data, [<<"\n">>],[global, trim_all]),
+%     % maybe use erl_evl scan strings, or something smarter.
+%     ok = lists:foreach(fun(Line) ->
+%         true = ets:insert(tbl, {erlang:phash2(Line), Line})
+%     end, Lines).
 
-file_read(FPID) ->
-    file:read(FPID, 4096).
+% file_read(FPID) ->
+%     file:read(FPID, 4096).
 
 %% ---------------------------------------------------------------------------------
 
-files(Dir) ->
-    filelib:fold_files(Dir, ".[e|h]rl$", true, fun(Filename, Acc) -> [Filename|Acc] end, []).
+% files(Dir) ->
+%     filelib:fold_files(Dir, ".[e|h]rl$", true, fun(Filename, Acc) -> [Filename|Acc] end, []).
 
 add_ebin(EbinPath) ->
     try

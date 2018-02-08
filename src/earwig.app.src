@@ -5,8 +5,10 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  spike,
+                  hawk
                  ]},
-  {mod, { earwig_app, []}},
+  %{mod, { earwig_app, []}},
   {env, []}
  ]}.

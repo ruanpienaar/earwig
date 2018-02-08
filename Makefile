@@ -1,4 +1,8 @@
-.PHONY: compile test clean rebar3
+.PHONY: escriptize compile test clean rebar3
+
+escriptize: compile
+	@./rebar3 escriptize
+	@cp _build/default/bin/earwig .
 
 compile: rebar3
 	@./rebar3 compile
