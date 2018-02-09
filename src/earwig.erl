@@ -1,37 +1,89 @@
 -module(earwig).
-
+-mode(compile).
+-define(OPTS, [
+     % {builtins, true} ,{recurse, true},
+     {verbose, true}, {warnings, true}
+]).
+-export([
+    demo_vertices/1,
+    demo_vertices_edges/1,
+    demo_vertices_variable/1
+]).
+-export([
+    % initialize_xref/1,
+    % module_vertices/1
+]).
 % Escript
 -export([
     main/1
 ]).
-
 -export([
     analyze_ebin_dir/1,
     analyze_ebin_dir_application/2,
     all_xref_queries/1
 ]).
--mode(compile).
 
--define(OPTS, [
-     % {builtins, true} ,{recurse, true},
-     {verbose, true}, {warnings, true}
-]).
+demo_vertices(Module) ->
+    {ok, Pid} = xref:start(x, ?OPTS),
+    {ok, Module} = xref_add_module(Module),
+    {ok, Vertices} = xref_module_vertices(Module),
+    io:format("------------------------------------------------~n"),
+    io:format("--- Module Vertices ----------------------------~n"),
+    io:format("------------------------------------------------~n"),
+    ok = lists:foreach(fun({M, F, Arity}) ->
+        io:format("--- ~p:~p/~p~n", [M, F, Arity])
+    end, Vertices),
+    io:format("------------------------------------------------~n"),
+    stopped = xref:stop(x),
+    Vertices.
 
-main(["inject",NodeStr,CookieStr]) ->
-    Node = list_to_atom(NodeStr),
-    Cookie = list_to_atom(CookieStr),
-    spike:connect_and_do(Node, Cookie, inject, [earwig]);
-main(["purge",NodeStr,CookieStr]) ->
-    Node = list_to_atom(NodeStr),
-    Cookie = list_to_atom(CookieStr),
-    spike:connect_and_do(Node, Cookie, purge, [earwig]);
-main(_) ->
-    usage().
+demo_vertices_edges(Module) ->
+    {ok, Pid} = xref:start(x, ?OPTS),
+    {ok, Module} = xref_add_module(Module),
+    {ok, VerticesEdges} = xref_module_vertices_edges(Module),
+    io:format("------------------------------------------------~n"),
+    io:format("--- Module Vertices Edges ----------------------~n"),
+    io:format("------------------------------------------------~n"),
+    % Ma = Module A, Mb = Module B. Ma CALLS Mb
+    ok = lists:foreach(fun({{Ma,Fa,Aa}, {Mb,Fb,Ab}}) ->
+        io:format("--- ~p:~p/~p -> ~p:~p/~p~n", [Ma, Fa, Aa, Mb, Fb, Ab])
+    end, VerticesEdges),
+    io:format("------------------------------------------------~n"),
+    stopped = xref:stop(x),
+    VerticesEdges.
 
-usage() ->
-    io:format("./earwig_injector [inject/purge] NODE COOKIE\n", []),
-    timer:sleep(50).
+demo_vertices_variable(Module) ->
+    {ok, Pid} = xref:start(x, ?OPTS),
+    {ok, Module} = xref_add_module(Module),
+    {ok, Vertices} = set_xref_module_vertices_variable(Module),
+    io:format("------------------------------------------------~n"),
+    io:format("--- Module Vertices ----------------------------~n"),
+    io:format("------------------------------------------------~n"),
+    ok = lists:foreach(fun({M, F, Arity}) ->
+        io:format("--- ~p:~p/~p~n", [M, F, Arity])
+    end, Vertices),
+    io:format("------------------------------------------------~n"),
+    io:format("XREF VARIABLE : ~p~n", [get_xref_module_variable(Module)]),
+    stopped = xref:stop(x),
+    Vertices.
 
+-spec xref_add_module(Mod :: atom()) -> {ok, Mod :: atom()}.
+xref_add_module(Module) ->
+    {module, Module} = c:l(Module),
+    {file, BeamLocation} = code:is_loaded(Module),
+    {ok,Module} = xref:add_module(x, BeamLocation).
+
+xref_module_vertices(_Module) ->
+    xref:q(x, "V").
+
+xref_module_vertices_edges(_Module) ->
+    xref:q(x, "E | V").
+
+set_xref_module_vertices_variable(Module) ->
+    xref:q(x, lists:flatten(io_lib:format("VAR_~p_vertices := V", [Module]))).
+
+get_xref_module_variable(Module) ->
+    xref:q(x, lists:flatten(io_lib:format("VAR_~p_vertices", [Module]))).
 
 analyze_ebin_dir(EbinDir) ->
     ok = initialize_xref(x),
@@ -130,16 +182,7 @@ all_xref_queries(Module) ->
     io:format("xref query : \"DF_3\"~n~p~n", [xref:q(x, "DF_3")]),
     xref:stop(x).
 
-initialize_xref(Ref) ->
-    case xref:start(Ref, ?OPTS) of
-        {error, {already_started, _}} ->
-            ok = xref:stop(Ref),
-            {ok, _} = xref:start(Ref),
-            ok;
-        {ok, _Pid} ->
-            ok
-    end,
-    ok = xref:set_default(Ref, ?OPTS).
+
 
 %% ----------------------------------------------------------------------------------------
 
@@ -221,3 +264,29 @@ add_ebin(EbinPath) ->
 
 % remove_ebin() ->
 %     ok.
+
+main(["inject",NodeStr,CookieStr]) ->
+    Node = list_to_atom(NodeStr),
+    Cookie = list_to_atom(CookieStr),
+    spike:connect_and_do(Node, Cookie, inject, [earwig]);
+main(["purge",NodeStr,CookieStr]) ->
+    Node = list_to_atom(NodeStr),
+    Cookie = list_to_atom(CookieStr),
+    spike:connect_and_do(Node, Cookie, purge, [earwig]);
+main(_) ->
+    usage().
+
+usage() ->
+    io:format("./earwig_injector [inject/purge] NODE COOKIE\n", []),
+    timer:sleep(50).
+
+initialize_xref(Ref) ->
+    case xref:start(Ref, ?OPTS) of
+        {error, {already_started, _}} ->
+            ok = xref:stop(Ref),
+            {ok, _} = xref:start(Ref),
+            ok;
+        {ok, _Pid} ->
+            ok
+    end,
+    ok = xref:set_default(Ref, ?OPTS).
